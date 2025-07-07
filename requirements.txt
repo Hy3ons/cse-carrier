@@ -1,0 +1,7 @@
+sqlalchemy
+psycopg2-binary
+openai
+requests
+beautifulsoup4
+python-dotenv
+supabase
