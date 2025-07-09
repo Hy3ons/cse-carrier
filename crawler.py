@@ -93,9 +93,8 @@ def update_notice_schedules(deep_url: str, base_url: str):
 
 
 from typing import List, Dict
-from models import Notice
 
-def discord_web_hook(notices: List[Notice]):
+def discord_web_hook(notices: List[dict]):
     """새로운 공지사항들을 Discord webhook으로 전송합니다."""
     if not notices:
         return
@@ -112,8 +111,8 @@ def discord_web_hook(notices: List[Notice]):
     batch_size = 50  # 한 번에 처리할 webhook 개수
     
     for notice in notices:
-        markdown_content = notice.markdown_content or "요약 내용이 없습니다."
-        original_url_text = f"\n\n🔗 **원본 링크**: {notice.original_url}"
+        markdown_content = notice.get('markdown_content') or "요약 내용이 없습니다."
+        original_url_text = f"\n\n🔗 **원본 링크**: {notice.get('original_url', '')}"
         
         payload = {
             "content": markdown_content + original_url_text
@@ -137,7 +136,7 @@ def discord_web_hook(notices: List[Notice]):
                 try:
                     response = requests.post(webhook.url, json=payload, timeout=10)
                     response.raise_for_status()
-                    print(f"✅ Webhook '{webhook.url[:50]}...'에 '{notice.title[:30]}...' 전송 성공")
+                    print(f"✅ Webhook '{webhook.url[:50]}...'에 '{notice.get('title', '')[:30]}...' 전송 성공")
                 except requests.exceptions.HTTPError as e:
                     if response.status_code == 404:
                         print(f"🔴 Webhook '{webhook.url[:50]}...'이 존재하지 않습니다. 비활성화합니다.")
@@ -153,9 +152,9 @@ def discord_web_hook(notices: List[Notice]):
             if webhook_batch:
                 time.sleep(0.1)
         
-        print(f"✅ '{notice.title[:30]}...' 공지사항을 모든 webhook에 전송 완료")
+        print(f"✅ '{notice.get('title', '')[:30]}...' 공지사항을 모든 webhook에 전송 완료")
 
-def triggered_notice_exists(notices: List[Notice]):
+def triggered_notice_exists(notices: List[dict]):
     discord_web_hook(notices)
 
 # url String을 매개변수로 받아, 해당 사이트 html을 긁어와, 전체적인 파싱을 시작하는 함수
@@ -222,7 +221,7 @@ def crawler(url : str, page : int, category : int):
             print(f"🔴 데이터베이스 저장 중 오류 발생: {e}")
             raise
             
-        notices.append(notice)
+        notices.append(notice)  # notice는 dict
         time.sleep(5)
     
     triggered_notice_exists(notices)

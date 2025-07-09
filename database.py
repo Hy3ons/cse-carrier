@@ -264,8 +264,8 @@ class SupabaseManager:
     def save_notice(self, notice_data: dict,
                     image_urls: Optional[List[str]] = None,
                     files: Optional[List[Dict[str, str]]] = None,
-                    ai_schedules: Optional[List[Dict[str, str]]] = None):
-        """공지사항 저장"""
+                    ai_schedules: Optional[List[Dict[str, str]]] = None) -> dict:
+        """공지사항 저장 (항상 dict 리턴)"""
         try:
             # 공지사항 먼저 insert
             title_hash = self.get_title_hash(notice_data['title'])
@@ -286,8 +286,9 @@ class SupabaseManager:
                 "category": notice_data['category'],
             }
 
-            notice_result = self.client.table("notices").insert(notice_payload).execute()
+            notice_result = self.client.table("notice").insert(notice_payload).execute()
             notice_id = notice_result.data[0]['id']
+            result_dict = dict(notice_result.data[0])  # 항상 dict로 변환
 
             # 일정 insert
             if ai_schedules:
@@ -300,12 +301,14 @@ class SupabaseManager:
                         "end": s["end"],
                         "notice_id": notice_id
                     })
-                self.client.table("schedules").insert(schedule_payload).execute()
+                schedules_result = self.client.table("schedules").insert(schedule_payload).execute()
+                result_dict["schedules"] = [dict(row) for row in getattr(schedules_result, 'data', [])]
 
             # 이미지 insert
             if image_urls:
                 img_payload = [{"url": url, "notice_id": notice_id} for url in image_urls]
-                self.client.table("notice_images").insert(img_payload).execute()
+                images_result = self.client.table("notice_images").insert(img_payload).execute()
+                result_dict["images"] = [dict(row) for row in getattr(images_result, 'data', [])]
 
             # 파일 insert
             if files:
@@ -314,10 +317,11 @@ class SupabaseManager:
                     "url": f["download_link"],
                     "notice_id": notice_id
                 } for f in files]
-                self.client.table("notice_files").insert(file_payload).execute()
+                files_result = self.client.table("notice_files").insert(file_payload).execute()
+                result_dict["files"] = [dict(row) for row in getattr(files_result, 'data', [])]
 
             print(f"✅ 공지사항 저장 완료: {notice_data['title'][:50]}...")
-            return notice_result.data[0]  # 저장된 공지 리턴
+            return result_dict  # 항상 dict 리턴
         except Exception as e:
             print(f"❌ 공지사항 저장 실패: {e}")
             raise
