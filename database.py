@@ -300,7 +300,8 @@ class SupabaseManager:
                         "description": s.get("description"),
                         "begin": s["begin"],
                         "end": s["end"],
-                        "notice_id": notice_id
+                        "notice_id": notice_id,
+                        "is_ignored": False  # NOT NULL 컬럼 기본값 추가
                     })
                 schedules_result = self.client.table("schedules").insert(schedule_payload).execute()
                 result_dict["schedules"] = [dict(row) for row in getattr(schedules_result, 'data', [])]
@@ -324,13 +325,23 @@ class SupabaseManager:
             print(f"✅ 공지사항 저장 완료: {notice_data['title'][:50]}...")
             return result_dict  # 항상 dict 리턴
         except Exception as e:
+            # 롤백: 이미 insert된 데이터 삭제
+            try:
+                if 'notice_id' in locals():
+                    self.client.table("schedules").delete().eq("notice_id", notice_id).execute()
+                    self.client.table("notice_images").delete().eq("notice_id", notice_id).execute()
+                    self.client.table("notice_files").delete().eq("notice_id", notice_id).execute()
+                    self.client.table("notice").delete().eq("id", notice_id).execute()
+                    print(f"🛑 예외 발생으로 notice_id={notice_id} 관련 데이터 롤백 완료")
+            except Exception as rollback_e:
+                print(f"❗ 롤백 중 추가 오류 발생: {rollback_e}")
             print(f"❌ 공지사항 저장 실패: {e}")
             raise
 
     def get_recent_notices(self, limit: int = 10):
         """최근 공지사항 조회"""
         try:
-            result = self.client.table("notices")\
+            result = self.client.table("notice")\
                 .select("*")\
                 .order("created_at", desc=True)\
                 .limit(limit)\
