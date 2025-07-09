@@ -275,7 +275,8 @@ class SupabaseManager:
                 "content": notice_data['content'],
                 "writer": notice_data.get('writer'),
                 "writer_email": notice_data.get('writer_email'),
-                "publish_date": notice_data.get('publish_date'),
+                # date 객체라면 isoformat()으로 변환, 아니면 그대로
+                "publish_date": notice_data.get('publish_date').isoformat() if notice_data.get('publish_date') else None,
                 "is_notice": notice_data.get('is_notice', False),
                 "ai_summary_title": notice_data.get('ai_summary_title'),
                 "ai_summary_content": notice_data.get('ai_summary_content'),
