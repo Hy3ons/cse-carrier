@@ -260,3 +260,77 @@ class SupabaseManager:
                 "created_at": datetime.now().isoformat()
             }).execute()
         print(f"✅ '{notice_title}'에 새로운 일정 {len(schedules)}개를 저장했습니다.")
+
+    def save_notice(self, notice_data: dict,
+                    image_urls: Optional[List[str]] = None,
+                    files: Optional[List[Dict[str, str]]] = None,
+                    ai_schedules: Optional[List[Dict[str, str]]] = None):
+        """공지사항 저장"""
+        try:
+            # 공지사항 먼저 insert
+            title_hash = self.get_title_hash(notice_data['title'])
+
+            notice_payload = {
+                "title": notice_data['title'],
+                "content": notice_data['content'],
+                "writer": notice_data.get('writer'),
+                "writer_email": notice_data.get('writer_email'),
+                "publish_date": notice_data.get('publish_date'),
+                "is_notice": notice_data.get('is_notice', False),
+                "ai_summary_title": notice_data.get('ai_summary_title'),
+                "ai_summary_content": notice_data.get('ai_summary_content'),
+                "markdown_content": notice_data.get('markdown_content'),
+                "original_url": notice_data['original_url'],
+                "ignore_flag": notice_data.get('ignore_flag', False),
+                "title_hash": title_hash,
+                "category": notice_data['category'],
+            }
+
+            notice_result = self.client.table("notices").insert(notice_payload).execute()
+            notice_id = notice_result.data[0]['id']
+
+            # 일정 insert
+            if ai_schedules:
+                schedule_payload = []
+                for s in ai_schedules:
+                    schedule_payload.append({
+                        "title": s["title"],
+                        "description": s.get("description"),
+                        "begin": s["begin"],
+                        "end": s["end"],
+                        "notice_id": notice_id
+                    })
+                self.client.table("schedules").insert(schedule_payload).execute()
+
+            # 이미지 insert
+            if image_urls:
+                img_payload = [{"url": url, "notice_id": notice_id} for url in image_urls]
+                self.client.table("notice_images").insert(img_payload).execute()
+
+            # 파일 insert
+            if files:
+                file_payload = [{
+                    "filename": f["file_name"],
+                    "url": f["download_link"],
+                    "notice_id": notice_id
+                } for f in files]
+                self.client.table("notice_files").insert(file_payload).execute()
+
+            print(f"✅ 공지사항 저장 완료: {notice_data['title'][:50]}...")
+            return notice_result.data[0]  # 저장된 공지 리턴
+        except Exception as e:
+            print(f"❌ 공지사항 저장 실패: {e}")
+            raise
+
+    def get_recent_notices(self, limit: int = 10):
+        """최근 공지사항 조회"""
+        try:
+            result = self.client.table("notices")\
+                .select("*")\
+                .order("created_at", desc=True)\
+                .limit(limit)\
+                .execute()
+            return result.data
+        except Exception as e:
+            print(f"❌ 최근 공지사항 조회 실패: {e}")
+            raise
