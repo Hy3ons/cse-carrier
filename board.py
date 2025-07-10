@@ -27,7 +27,7 @@ class Board:
         self.detail_text = detail_div.get_text(separator='\n', strip=True) if detail_div else ''
 
         self.images = []
-        CNU_URL = 'https://computer.cnu.ac.kr/'
+        CNU_URL = 'https://computer.cnu.ac.kr'
 
         if detail_div:
             img_tags = detail_div.find_all('img')
