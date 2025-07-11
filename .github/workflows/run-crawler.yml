@@ -3,8 +3,14 @@ name: Run Crawler
 on:
   workflow_dispatch:
   schedule:
-    - cron: '*/30 * * * *'
-
+    - cron: '0 22 * * *'  # KST 07:00
+    - cron: '0 0 * * *'   # KST 09:00
+    - cron: '0 2 * * *'   # KST 11:00
+    - cron: '0 4 * * *'   # KST 13:00
+    - cron: '0 6 * * *'   # KST 15:00
+    - cron: '0 8 * * *'   # KST 17:00
+    - cron: '0 10 * * *'  # KST 19:00
+    - cron: '0 12 * * *'  # KST 21:00
 jobs:
   run-crawler:
     runs-on: ubuntu-latest
