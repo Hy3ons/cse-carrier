@@ -17,6 +17,12 @@ CRAWLING_URL_LIST = [
 "https://computer.cnu.ac.kr/computer/notice/cse.do",
 ]
 
+headers = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+    "Referer": "https://computer.cnu.ac.kr/",
+    "Accept-Language": "ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7"
+}
+
 def b_title_box_parser (item) :
     notice_data = {}
 
@@ -65,7 +71,7 @@ def update_notice_schedules(deep_url: str, base_url: str):
     title = ""  # for exception logging
     try:
         # 상세 페이지로 이동하여 내용 가져오기
-        deepResponse = requests.get(deep_url, timeout=10)
+        deepResponse = requests.get(deep_url, headers=headers, timeout=10)
         deepResponse.raise_for_status()
         context = Board(boardHtml=deepResponse.text, baseUrl=base_url)
 
@@ -134,7 +140,7 @@ def discord_web_hook(notices: List[dict]):
             # 현재 배치의 webhook들에 전송
             for webhook in webhook_batch:
                 try:
-                    response = requests.post(webhook.url, json=payload, timeout=10)
+                    response = requests.post(webhook.url, json=payload, headers=headers, timeout=10)
                     response.raise_for_status()
                     print(f"✅ Webhook '{webhook.url[:50]}...'에 '{notice.get('title', '')[:30]}...' 전송 성공")
                 except requests.exceptions.HTTPError as e:
@@ -159,7 +165,7 @@ def triggered_notice_exists(notices: List[dict]):
 
 # url String을 매개변수로 받아, 해당 사이트 html을 긁어와, 전체적인 파싱을 시작하는 함수
 def crawler(url : str, page : int, category : int):
-    response = requests.get(make_pagination_url(page, url), timeout=10)
+    response = requests.get(make_pagination_url(page, url), headers=headers, timeout=10)
     soup = BeautifulSoup(response.text, "html.parser")
 
     items = soup.select("div.b-title-box")
@@ -184,8 +190,10 @@ def crawler(url : str, page : int, category : int):
             continue
 
         deepUrl = url + item['url']
-        deepResponse : requests.api = requests.get(deepUrl, timeout=10)
+        deepResponse = requests.get(deepUrl, headers=headers, timeout=10)
         context = Board(boardHtml=deepResponse.text, baseUrl=url)
+
+        print(deepUrl + " 로 접속하여 2차 크롤링을 진행합니다.", flush=True)
 
         ai_response = gpt.process_notice_content(title=context.title, content=context.detail_text)
         ai_schedules = gpt.extract_schedule_from_notice(title=context.title, content=context.detail_text)
@@ -207,9 +215,9 @@ def crawler(url : str, page : int, category : int):
             'writer_email': context.email,
             'publish_date': publish_date_obj,
             'is_notice': item.get('is_notice', False),
-            'ai_summary_title': ai_response.get('ai_summary_title'),
-            'ai_summary_content': ai_response.get('ai_summary_content'),
-            'markdown_content': ai_response.get('markdown_content'),
+            'ai_summary_title': ai_response.AI_SUMMARY_TITLE,
+            'ai_summary_content': ai_response.AI_SUMMARY_CONTENT,
+            'markdown_content': ai_response.MARKDOWN_CONTENT,
             'original_url': deepUrl,
             'category': category,
         }
@@ -240,7 +248,7 @@ def discord_web_hook_admin(error_message: str):
     }
 
     try:
-        response = requests.post(admin_webhook_url, json=payload, timeout=10)
+        response = requests.post(admin_webhook_url, json=payload, headers=headers, timeout=10)
         response.raise_for_status()
         print("✅ 에러 메시지를 관리자 Discord Webhook으로 전송했습니다.")
     except Exception as e:

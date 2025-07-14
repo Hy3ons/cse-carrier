@@ -1,4 +1,5 @@
-from bs4 import BeautifulSoup
+from typing import cast
+from bs4 import BeautifulSoup, Tag
 
 
 class Board:
@@ -7,33 +8,52 @@ class Board:
 
         tbody = soup.select_one('tbody')
 
+        assert tbody is not None
+
         # 게시글 제목 (첫 번째 행)
-        self.title = tbody.select_one('td.b-title-box').get_text(strip=True)
+        title_tag = tbody.select_one('td.b-title-box')
+        assert title_tag is not None, "title Tag가 없습니다."
+
+        self.title = title_tag.get_text(strip=True)
 
         # 작성자 (두 번째 행)
-        self.writer = tbody.select_one('tr:nth-of-type(2) td.b-no-right').get_text(strip=True)
+        writer_tag = tbody.select_one('tr:nth-of-type(2) td.b-no-right')
+        assert writer_tag is not None, "writer Tag가 없습니다."
+
+        self.writer = writer_tag.get_text(strip=True)
 
         # 조회수 (세 번째 행, 첫 번째 td)
-        self.views = tbody.select_one('tr:nth-of-type(3) td').get_text(strip=True)
+        views_tag = tbody.select_one('tr:nth-of-type(3) td')
+        assert views_tag is not None, "views Tag가 없습니다."
+
+        self.views = views_tag.get_text(strip=True)
 
         # 등록일 (세 번째 행, 마지막 td)
-        self.date = tbody.select_one('tr:nth-of-type(3) td.b-no-right').get_text(strip=True)
+        date_tag = tbody.select_one('tr:nth-of-type(3) td.b-no-right')
+        assert date_tag is not None, "date Tag가 없습니다."
+
+        self.date = date_tag.get_text(strip=True)
 
         # 이메일 (네 번째 행)
-        self.email = tbody.select_one('tr:nth-of-type(4) td.b-no-right').get_text(strip=True)
+        email_tag = tbody.select_one('tr:nth-of-type(4) td.b-no-right')
+        assert email_tag is not None, "email Tag가 없습니다."
+
+        self.email = email_tag.get_text(strip=True)
 
         # 상세 내용 (div.fr-view 내부)
         detail_div = tbody.select_one('div.fr-view')
+        assert isinstance(detail_div, Tag)
+
         self.detail_text = detail_div.get_text(separator='\n', strip=True) if detail_div else ''
 
         self.images = []
         CNU_URL = 'https://computer.cnu.ac.kr'
 
         if detail_div:
-            img_tags = detail_div.find_all('img')
+            img_tags: list[Tag] = cast(list[Tag], detail_div.find_all('img'))
 
             for img in img_tags:
-                url = img.get('src')
+                url: str = cast(str, img.get('src'))
 
                 if url.startswith('http'):
                     self.images.append(url)
@@ -53,18 +73,18 @@ class Board:
                 if download_a:
                     self.file_box.append({
                         'file_name': download_a.get_text(strip=True),
-                        'download_link': baseUrl + download_a.get('href')
+                        'download_link': baseUrl + cast(str, download_a.get('href'))
                     })
 
                 if download_a2:
                     self.file_box.append({
                         'file_name': download_a2.get_text(strip=True),
-                        'download_link': baseUrl + download_a2.get('href')
+                        'download_link': baseUrl + cast(str, download_a2.get('href'))
                     })
 
                 if download_a3:
                     self.file_box.append({
                         'file_name': download_a3.get_text(strip=True),
-                        'download_link': baseUrl + download_a3.get('href')
+                        'download_link': baseUrl + cast(str, download_a3.get('href'))
                     })
 
