@@ -91,7 +91,7 @@ class GPTClient:
     def extract_schedule_from_notice(self, title: str, content: str) -> list:
         """공지사항 내용에서 일정 정보를 추출하여 JSON으로 반환"""
         prompt = f"""
-다음 대학교 공지사항을 분석하여, **학생들이 반드시 확인하고 행동해야 하는 중요한 일정 정보**를 JSON 객체 배열 형식으로 추출해주세요. 마감 기한이 명확한 일정과 상시 진행되는 일정을 모두 포함해주세요.
+다음 대학교 공지사항을 분석하여, **학생들이 반드시 확인하고 행동해야 하는 중요한 일정 정보**를 JSON 객체의 items 리스트에 담아 반환해주세요. 마감 기한이 명확한 일정과 상시 진행되는 일정을 모두 포함해주세요.
 
 **추출 대상:**
 - **신청/접수 기간:** 장학금 신청, 프로그램 지원, 수강 신청 등 (상시 접수 포함)
@@ -119,17 +119,19 @@ class GPTClient:
 - 원문에 명시된 모든 날짜와 시간은 **한국 표준시(KST, UTC+9)로 간주**하고, 최종 결과도 **KST**로 반환해주세요.
 - 시간이 명확하게 명시되지 않은 경우, `begin` 날짜의 시간은 `00:00:00`으로, `end` 날짜의 시간은 `23:59:59`으로 간주해주세요.
 - 모든 날짜는 현재 연도를 기준으로 파싱해주세요.
-- 추출할 수 있는 해당 유형의 일정이 하나도 없다면, 빈 배열 `[]`을 반환해주세요.
+- 추출할 수 있는 해당 유형의 일정이 하나도 없다면, `items: []`로 반환해주세요.
 
 **응답 형식 (반드시 아래 JSON 형식 스키마를 준수해주세요):**
-[
-  {{
-    "title": "string",
-    "description": "string",
-    "begin": "YYYY-MM-DDTHH:MM:SS+09:00",
-    "end": "YYYY-MM-DDTHH:MM:SS+09:00"
-  }}
-]
+{{
+  "items": [
+    {{
+      "title": "string",
+      "description": "string",
+      "begin": "YYYY-MM-DDTHH:MM:SS+09:00",
+      "end": "YYYY-MM-DDTHH:MM:SS+09:00"
+    }}
+  ]
+}}
 """
         try:
             result = self.structedScheduleLLM.invoke(prompt)
