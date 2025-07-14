@@ -65,7 +65,7 @@ def update_notice_schedules(deep_url: str, base_url: str):
     title = ""  # for exception logging
     try:
         # 상세 페이지로 이동하여 내용 가져오기
-        deepResponse = requests.get(deep_url)
+        deepResponse = requests.get(deep_url, timeout=10)
         deepResponse.raise_for_status()
         context = Board(boardHtml=deepResponse.text, baseUrl=base_url)
 
@@ -159,7 +159,7 @@ def triggered_notice_exists(notices: List[dict]):
 
 # url String을 매개변수로 받아, 해당 사이트 html을 긁어와, 전체적인 파싱을 시작하는 함수
 def crawler(url : str, page : int, category : int):
-    response = requests.get(make_pagination_url(page, url))
+    response = requests.get(make_pagination_url(page, url), timeout=10)
     soup = BeautifulSoup(response.text, "html.parser")
 
     items = soup.select("div.b-title-box")
@@ -184,7 +184,7 @@ def crawler(url : str, page : int, category : int):
             continue
 
         deepUrl = url + item['url']
-        deepResponse : requests.api = requests.get(deepUrl)
+        deepResponse : requests.api = requests.get(deepUrl, timeout=10)
         context = Board(boardHtml=deepResponse.text, baseUrl=url)
 
         ai_response = gpt.process_notice_content(title=context.title, content=context.detail_text)

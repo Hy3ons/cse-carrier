@@ -28,6 +28,7 @@ jobs:
         run: pip install --no-cache-dir -r requirements.txt
 
       - name: Run crawler
+        timeout-minutes: 4
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
