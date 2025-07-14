@@ -1,35 +1,24 @@
-import openai
 import os
 from dotenv import load_dotenv
 
 from langchain_openai import ChatOpenAI
-from pydantic import BaseModel, SecretStr
+from pydantic import BaseModel, Field, SecretStr
 from typing import List
+
+from sqlalchemy import desc
 
 class NoticeItem(BaseModel):
     '''내용에 대한 제목 요약, 요약된 내용, 마크다운으로 변환된 전체 내용을 제공하세요.'''
 
-    AI_SUMMARY_TITLE : str
-    '''핵심 내용을 담은 간결한 제목 (45자 이내)'''
-
-    AI_SUMMARY_CONTENT: str
-    '''중요한 내용을 요약 (100자 이내)'''
-
-    MARKDOWN_CONTENT: str
-    '''전체 내용을 원본 의미를 유지하며 사용자가 읽기 쉬운 마크다운 형식으로 변환한다. 이모지를 사용해도 됨.'''
+    AI_SUMMARY_TITLE : str = Field(..., description='핵심 내용을 담은 간결한 제목 (45자 이내)')
+    AI_SUMMARY_CONTENT: str = Field(..., description='중요한 내용을 요약 (100자 이내)')
+    MARKDOWN_CONTENT: str = Field(..., description='전체 내용을 원본 의미를 유지하며 사용자가 읽기 쉬운 마크다운 형식으로 변환한다. 이모지를 사용해도 됨.')
 
 class ScheduleItem(BaseModel):
-    title : str
-    '''일정의 제목 (예: "2024년 2학기 국가장학금 1차 신청")'''
-
-    description: str
-    '''일정에 대한 구체적인 설명'''
-
-    begin: str
-    '''일정(신청/제출 기간)이 시작하는 날짜와 시간 (KST, 'YYYY-MM-DDTHH:MM:SS+09:00' 형식)'''
-
-    end: str
-    '''일정(신청/제출 기간)이 끝나는 날짜와 시간 (KST, 'YYYY-MM-DDTHH:MM:SS+09:00' 형식)'''
+    title: str = Field(..., description='일정의 제목 (예: "2024년 2학기 국가장학금 1차 신청")')
+    description: str = Field(..., description='일정에 대한 구체적인 설명')
+    begin: str = Field(..., description="일정(신청/제출 기간)이 시작하는 날짜와 시간 (KST, 'YYYY-MM-DDTHH:MM:SS+09:00' 형식)")
+    end: str = Field(..., description="일정(신청/제출 기간)이 끝나는 날짜와 시간 (KST, 'YYYY-MM-DDTHH:MM:SS+09:00' 형식)")
 
 class ScheduleList(BaseModel):
     '''ScheduleItem을 리스트로 하는 멤버를 가지는 Wrapper 클래스'''
@@ -52,23 +41,11 @@ class GPTClient:
         '''공지사항 내용을 GPT로 처리하여 요약, 제목, 마크다운 생성'''
 
         prompt = f"""
-다음 대학교 공지사항을 분석하여 JSON 형식으로 정리해주세요.
+다음 대학교 공지사항을 분석하여 JSON 형식으로 정리해주세요. 마크다운으로 변환할 때는 가독성이 좋게, 다양한 서식을 활용하여, 풍성하게 구성할 것.
 
 **공지사항 원문:**
 - 제목: {title}
 - 내용: {content}
-
-**요구사항:**
-1. `AI_SUMMARY_TITLE`: 핵심 내용을 담은 간결한 제목 (45자 이내)
-2. `AI_SUMMARY_CONTENT`: 중요한 내용을 요약 (100자 이내)
-3. `MARKDOWN_CONTENT`: 전체 내용을 원본 의미를 유지하며 사용자가 읽기 쉬운 마크다운 형식으로 변환한다. 이모지를 사용해도 됨.
-
-**응답 형식 (반드시 아래 JSON 형식 스키마를 준수해주세요):**
-{{
-  "AI_SUMMARY_TITLE": "string",
-  "AI_SUMMARY_CONTENT": "string",
-  "MARKDOWN_CONTENT": "string"
-}}
 """
         try:
             result = self.structedSummaryLLM.invoke(prompt)
@@ -120,18 +97,6 @@ class GPTClient:
 - 시간이 명확하게 명시되지 않은 경우, `begin` 날짜의 시간은 `00:00:00`으로, `end` 날짜의 시간은 `23:59:59`으로 간주해주세요.
 - 모든 날짜는 현재 연도를 기준으로 파싱해주세요.
 - 추출할 수 있는 해당 유형의 일정이 하나도 없다면, `items: []`로 반환해주세요.
-
-**응답 형식 (반드시 아래 JSON 형식 스키마를 준수해주세요):**
-{{
-  "items": [
-    {{
-      "title": "string",
-      "description": "string",
-      "begin": "YYYY-MM-DDTHH:MM:SS+09:00",
-      "end": "YYYY-MM-DDTHH:MM:SS+09:00"
-    }}
-  ]
-}}
 """
         try:
             result = self.structedScheduleLLM.invoke(prompt)
