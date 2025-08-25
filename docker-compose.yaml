@@ -1,0 +1,12 @@
+services:
+  crawler:
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+    volumes:
+      - .:/app
+
+    environment:
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_KEY=${SUPABASE_KEY}

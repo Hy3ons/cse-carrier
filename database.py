@@ -218,6 +218,7 @@ class SupabaseManager:
     def notice_exists(self, title: str) -> bool:
         title_hash = self.get_title_hash(title)
         response = self.client.table("notice").select("id").eq("title_hash", title_hash).limit(1).execute()
+        print(title, response.data)
         return bool(response.data)
 
     def get_active_webhooks(self) -> list:
@@ -277,11 +278,12 @@ class SupabaseManager:
     def save_notice(self, notice_data: dict,
                     image_urls: Optional[List[str]] = None,
                     files: Optional[List[Dict[str, str]]] = None,
-                    ai_schedules: Optional[List[ScheduleItem]] = None) -> dict:
+                    ai_schedules: Optional[List[ScheduleItem]] = None,
+                    original_title: str = None) -> dict:
         """공지사항 저장 (항상 dict 리턴)"""
         try:
             # 공지사항 먼저 insert
-            title_hash = self.get_title_hash(notice_data['title'])
+            title_hash = self.get_title_hash(original_title) if original_title else self.get_title_hash(notice_data['title'])
 
             notice_payload = {
                 "title": notice_data['title'],

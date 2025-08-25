@@ -198,6 +198,9 @@ def crawler(url : str, page : int, category : int):
         ai_response = gpt.process_notice_content(title=context.title, content=context.detail_text)
         ai_schedules = gpt.extract_schedule_from_notice(title=context.title, content=context.detail_text)
 
+        if (db_manager.notice_exists(title=context.title)) :
+            print(f"⚠️ '{context.title}' 이전에 있는 공지사항입니다.", flush=True)
+            continue
 
         # 2. DB에 저장할 데이터 준비
         try:
