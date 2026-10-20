@@ -33,7 +33,7 @@ class GPTClient:
         if not self.api_key:
             raise ValueError("OpenAI API key가 필요합니다.")
         
-        self.llm = ChatOpenAI(api_key=SecretStr(self.api_key), model="gpt-4o-mini", temperature=0.4, max_completion_tokens=5000)
+        self.llm = ChatOpenAI(api_key=SecretStr(self.api_key), model="gpt-6-luna", temperature=0.4, max_completion_tokens=5000)
         self.structedSummaryLLM = self.llm.with_structured_output(NoticeItem)
         self.structedScheduleLLM = self.llm.with_structured_output(ScheduleList)
 
